@@ -1,0 +1,9 @@
+name: Sex
+main: com.tonton.sex.Main
+version: 1.0.0
+api-version: '1.13'
+commands: 
+   sex: 
+      description: SEX
+      permission: sex.sex
+      usage: /<command> 
