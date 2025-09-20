@@ -15,6 +15,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Villager;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 
@@ -71,20 +72,20 @@ public class BaseCommands implements CommandExecutor {
 		Random random = new Random();
 		if(random.nextInt(0,5)==2) {
 			pl.setHealth(0);
-			Bukkit.getServer().broadcastMessage(pl.getName()+" НЕ ВЫДЕРЖАЛ ОТКАЗА ОТ ИГРОКА "+pl2.getName()+" И УМЕР ОТ СЕРДЕЧНОГО ПРИСТУПА");
+			pl.sendMessage("ВЫ НЕ ВЫДЕРЖАЛИ ОТКАЗА ОТ ИГРОКА "+pl2.getName()+" И УМЕРЛИ");
 		}
 	}
 	private void SummonRandomEntity(Player pl,Player pl2) {
 		Random random = new Random();
-		if(random.nextInt(0,4)==2) {
+		if(random.nextInt(0,100)<=40) {
 		try {
-		
-		EntityType[] entityTypes = EntityType.values();
-		int randomIndex = random.nextInt(entityTypes.length);
-		EntityType randomEntityType = entityTypes[randomIndex];
-		Entity entity=pl.getWorld().spawnEntity(pl.getLocation(), randomEntityType);
+		Villager entity=(Villager) pl.getWorld().spawnEntity(pl.getLocation(), EntityType.VILLAGER);
+		entity.setMaxHealth(pl.getHealth()+pl2.getHealth()+random.nextInt(0,20));
+		entity.setHealth(entity.getMaxHealth());
+		entity.setBaby();
 		entity.setCustomName(capitalizeFirst(pl.getName())+ capitalizeFirst(pl2.getName())+random.nextInt(0,1000));
-		 Bukkit.getServer().broadcastMessage(pl.getName()+" И "+pl2.getName()+" ПОТРАХАЛИСЬ И У НИХ РОДИЛСЯ "+randomEntityType);
+		pl.sendMessage("У ВАС РОДИЛСЯ РЕБЁНОК "+entity.getCustomName() );
+		pl2.sendMessage("У ВАС РОДИЛСЯ РЕБЁНОК "+entity.getCustomName() );
 		} catch(Exception e) {
 			
 		}
@@ -93,49 +94,7 @@ public class BaseCommands implements CommandExecutor {
 	private void SummonPatricle(Player pl,Particle particle) {
 		pl.getWorld().spawnParticle(particle, pl.getLocation(), 5, 0.5, 0.5, 0.5, 0.1);
 	}
-	private void GenerateZombieMelon(Block melon) {
-		melon.setType(Material.AIR);
-		LivingEntity livingEntity=(LivingEntity) melon.getWorld().spawnEntity(melon.getLocation(), EntityType.VILLAGER);
-				  livingEntity.getEquipment().setHelmet(new ItemStack(Material.LEGACY_MELON_BLOCK));
-	       livingEntity.setCustomName("ДРУГГ");
-	       livingEntity.setMaxHealth(100);
-	       livingEntity.setHealth(100);
-	       livingEntity.getEquipment().setItemInHand(new ItemStack(Material.MELON));
-	}
-	private void GenerateRandomMelonEvent(Player pl,Block melon) {
-		Random random=new Random();
-		int randomValue=random.nextInt(4);
-		switch(randomValue){
-				case 0:
-					GenerateZombieMelon(melon);
-					pl.sendMessage("ИЗ ТЫКВЫ ВЫЛЕЗ ДРУГ");
-					break;
-				case 1:
-					melon.setType(Material.AIR);
-					pl.getInventory().addItem(new ItemStack(Material.MELON,64));
-					pl.sendMessage("ТЫКВА РОДИЛА МНОГО МАЛЕНЬКИХ ТЫКОВОК И УМЕРЛА");
-					break;
-				case 2:
-					melon.setType(Material.AIR);
-					pl.getWorld().createExplosion(pl.getLocation(), 2);
-					pl.sendMessage("ВО ВРЕМЯ СОИТИЯ АРБУЗ ВЗОРВАЛСЯ");
-					break;
-				case 3:
-					World melonWorld=Bukkit.getWorld("melon_world");
-					World baseWorld=Bukkit.getWorld("world");
-					if(melonWorld==null||baseWorld==null)
-						pl.sendMessage("ВЫ ТРАХНУЛИ ТЫКВУ, НО НИЧЕГО НЕ ПРОИЗОШЛО");
-					if(pl.getWorld()==baseWorld) {
-						pl.teleport(new Location(melonWorld,0,melonWorld.getHighestBlockYAt(0, 0)+1,0));
-						Bukkit.broadcastMessage(ChatColor.RED+pl.getName()+" ТРАХНУЛ АРБУЗ И ИСЧЕЗ БЕЗ СЛЕДА");
-					}else  {
-						pl.teleport(new Location(baseWorld,0,baseWorld.getHighestBlockYAt(0, 0)+1,0));
-						pl.getInventory().clear();
-						pl.sendMessage("Во время секса тыква съела все ваши вещи...");
-					}
-					break;
-		}
-	}
+	
 	@Override
 	public boolean onCommand(CommandSender arg0, Command arg1, String arg2, String[] arg3) {
 		// TODO Auto-generated method stub
@@ -143,12 +102,10 @@ public class BaseCommands implements CommandExecutor {
 			return true;
 		}
 		Player player=(Player)arg0;
-		System.out.println("AAA:"+arg2+" a:"+arg3.length);
 		if(arg2.equals("sex")&&arg3.length>0) {
 			switch(arg3[0]) {
 			case "help":
 				arg0.sendMessage("/sex [имя игрока] - предложить секс игроку");
-				arg0.sendMessage("/sex melon - трахнуть арбуз под вами");
 				arg0.sendMessage("/sex when - узнать когда можно потрахаться");
 				arg0.sendMessage("/sex accept - согласиться на секс");
 				arg0.sendMessage("/sex cancel - отказатся");
@@ -181,22 +138,6 @@ public class BaseCommands implements CommandExecutor {
 					SummonPatricle(senderPl,Particle.HAPPY_VILLAGER);
 					SummonPatricle(player,Particle.HAPPY_VILLAGER);
 					SummonRandomEntity(player,senderPl);
-				break;
-			case "melon":
-				if(!CanSexByTime(player)) {
-					arg0.sendMessage("ВАШЕ СЕМЯ ЕЩЁ НЕ ОХЛАДИЛОСЬ. ПОДОЖДИТЕ "+TimeToSex(player)+" СЕКУНД");
-					break;
-				}
-				Block melon=player.getWorld().getBlockAt(player.getLocation().add(0,-1,0));
-				System.out.println("MELL:"+melon.getType());
-				if(melon.getType()!=Material.MELON){
-					arg0.sendMessage("ПОД ВАМИ НЕТУ АРБУЗА. КОГО ТРАХАТЬ???");
-					
-					break;
-				}
-				player.setMetadata("timeSex", new FixedMetadataValue(Main.MainPlugin,WorldTimeToGlobal()));
-				GenerateRandomMelonEvent(player,melon);
-			//	player.setMetadata("timeSex", new FixedMetadataValue(Main.MainPlugin,WorldTimeToGlobal()));
 				break;
 			case "cancel":
 				if(!player.hasMetadata("sender"))
